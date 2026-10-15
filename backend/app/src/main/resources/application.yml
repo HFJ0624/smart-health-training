@@ -1,0 +1,144 @@
+server:
+  port: ${FITAGENT_SERVER_PORT:8080}
+  # 小程序请求不经过浏览器，无 CORS 语义；H5 不是本轮交付目标
+  shutdown: graceful
+
+spring:
+  application:
+    name: fitagent-app
+
+  # 连接参数一律来自环境变量：不把服务器地址与口令写进仓库
+  datasource:
+    url: ${FITAGENT_MYSQL_URL:jdbc:mysql://127.0.0.1:3306/smart_health_training?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&preserveInstants=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${FITAGENT_MYSQL_USERNAME:fitagent}
+    password: ${FITAGENT_MYSQL_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: fitagent-pool
+      maximum-pool-size: ${FITAGENT_DB_POOL_MAX:10}
+      connection-timeout: 5000
+
+  data:
+    redis:
+      host: ${FITAGENT_REDIS_HOST:127.0.0.1}
+      port: ${FITAGENT_REDIS_PORT:6379}
+      password: ${FITAGENT_REDIS_PASSWORD:}
+      database: ${FITAGENT_REDIS_DATABASE:0}
+      timeout: 3s
+
+  flyway:
+    enabled: ${FITAGENT_FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    encoding: UTF-8
+    baseline-on-migrate: false
+    validate-on-migrate: true
+    clean-disabled: true
+    out-of-order: false
+
+  servlet:
+    multipart:
+      enabled: false
+
+  jackson:
+    default-property-inclusion: always
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+    # 关闭无关的启动 banner 输出
+    banner: false
+
+fitagent:
+  rate-limit:
+    enabled: true
+    login-per-minute: 10
+    import-per-minute: 30
+    general-per-minute: 300
+    max-body-bytes: 65536
+    max-import-body-bytes: 262144
+  wechat:
+    app-id: ${FITAGENT_WECHAT_APPID:}
+    app-secret: ${FITAGENT_WECHAT_SECRET:}
+    code2-session-url: https://api.weixin.qq.com/sns/jscode2session
+    timeout: 5s
+  auth:
+    session:
+      ttl: 7d
+      renew-when-below: 1d
+      key-prefix: "fa:sess:"
+    dev-login:
+      enabled: false
+      app-id: wx.dev.local
+      test-user-ids:
+        - dev-a
+        - dev-b
+
+  # ---- Agent 第一版（BYOK + 自研执行循环）----
+  # 密钥一律来自环境变量：留空表示"没配置"，凭据保存接口会直接拒绝，
+  # 而不是退化成一个可预测的默认密钥（docs/agent-v1-design.md §6.1）。
+  modelaccess:
+    master-key: ${FITAGENT_MASTER_KEY:}
+    key-version: ${FITAGENT_KEY_VERSION:v1}
+    fingerprint-key: ${FITAGENT_KEY_FINGERPRINT_KEY:}
+    balance:
+      path: /user/balance
+      timeout: 10s
+      stale-after: 5m
+
+  agent:
+    model:
+      deepseek:
+        # 权威值是 model_provider.base_url（表里由运维写，接口不接受客户端改写）；
+        # 这里只是表还没种子时的官方默认地址。文档路径不带 /v1（protocol §2）。
+        base-url: ${FITAGENT_DEEPSEEK_BASE_URL:https://api.deepseek.com}
+        chat-completions-path: /chat/completions
+        # 只能是 disabled：官方默认 enabled，而带 tools 的请求必须回传 reasoning_content，
+        # 本轮不实现回传，配置层直接拒绝开启（protocol §5）。
+        thinking: disabled
+        connect-timeout: 5s
+        read-timeout: 30s
+        max-output-tokens-cap: 393216
+    # 工程闸门：数字不是产品规则也不是健康阈值，只给预算与 Worker 一个可证明的上界（design §3）。
+    limits:
+      max-model-calls: 4
+      max-tool-calls: 8
+      max-tools-per-round: 4
+      max-result-bytes: 8192
+      max-output-tokens: 1024
+      deadline-seconds: 120
+    fake-model:
+      # 本地演示消息循环用；prod/production 下一旦为 true 就让应用启动失败（FakeModelStartupGuard）。
+      enabled: false
+
+  coach:
+    provider-code: DEEPSEEK
+    max-question-chars: 2000
+    title-from-question-chars: 60
+    history-turns: 6
+    # 单机有界线程池 + 租约恢复（design §10）；队列满时 run 留在 QUEUED 由补偿扫描再领。
+    worker:
+      core-size: 1
+      max-size: 2
+      queue-capacity: 32
+      lease-seconds: 60
+      lease-heartbeat-seconds: 20
+      scan-interval-seconds: 60
+      scan-batch-size: 20
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  pattern:
+    level: "%5p [%X{traceId:-}]"
+  level:
+    com.hfj.fitagent: INFO

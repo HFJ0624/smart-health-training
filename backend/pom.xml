@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  FitAgent 后端父 POM。
+  阶段 P1 只包含 app 一个模块；agent-core / media-worker 的边界见 docs/p1-architecture.md §7，
+  本阶段不创建这些模块，也不制造空类。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.hfj</groupId>
+  <artifactId>fitagent-parent</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>FitAgent :: parent</name>
+  <description>智能健康训练智能体小程序 - 后端父配置</description>
+
+  <modules>
+    <module>app</module>
+  </modules>
+
+  <properties>
+    <!-- 硬性约束：Java 17（覆盖设计文档里的 Java 21） -->
+    <java.version>17</java.version>
+    <maven.compiler.release>17</maven.compiler.release>
+
+    <!-- 本机 Maven 平台编码为 GBK，所有编码必须显式锁 UTF-8，否则中文注释与迁移脚本会静默损坏 -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <!-- MyBatis-Plus：Boot 4 必须用 boot4 starter；用 boot3 starter 会崩在 factoryBeanObjectType（MP #7009） -->
+    <mybatis-plus.version>3.5.17</mybatis-plus.version>
+    <mybatis-spring.version>4.1.0</mybatis-spring.version>
+
+    <testcontainers.version>1.21.4</testcontainers.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+        <version>${mybatis-plus.version}</version>
+      </dependency>
+      <!-- 3.5.9+ 起分页/防全表更新等依赖 JSqlParser 的拦截器被拆到此包，必须与 MP 主版本同版 -->
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-jsqlparser</artifactId>
+        <version>${mybatis-plus.version}</version>
+      </dependency>
+      <!-- MP starter 钉的是 4.0.0，而 Boot 4.1.1 带 Spring Framework 7.0.9；显式对齐降低 NoSuchMethodError 风险 -->
+      <dependency>
+        <groupId>org.mybatis</groupId>
+        <artifactId>mybatis-spring</artifactId>
+        <version>${mybatis-spring.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <release>17</release>
+            <encoding>UTF-8</encoding>
+            <parameters>true</parameters>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <argLine>-Dfile.encoding=UTF-8</argLine>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

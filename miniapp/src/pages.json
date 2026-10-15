@@ -1,0 +1,131 @@
+{
+  "pages": [
+    {
+      "path": "pages/auth/login",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "default"
+      }
+    },
+    {
+      "path": "pages/index/home",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/plan/list",
+      "style": {
+        "navigationBarTitleText": "训练",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/coach/chat",
+      "style": {
+        "navigationBarTitleText": "AI 教练"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/mine/profile",
+      "style": {
+        "navigationBarTitleText": "个人档案"
+      }
+    },
+    {
+      "path": "pages/mine/goal",
+      "style": {
+        "navigationBarTitleText": "目标管理"
+      }
+    },
+    {
+      "path": "pages/mine/body/records",
+      "style": {
+        "navigationBarTitleText": "体重记录",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/plan/detail",
+      "style": {
+        "navigationBarTitleText": "计划详情"
+      }
+    },
+    {
+      "path": "pages/plan/edit",
+      "style": {
+        "navigationBarTitleText": "编辑计划"
+      }
+    },
+    {
+      "path": "pages/plan/import",
+      "style": {
+        "navigationBarTitleText": "导入计划"
+      }
+    },
+    {
+      "path": "pages/plan/exercises",
+      "style": {
+        "navigationBarTitleText": "动作字典",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/mine/model-settings",
+      "style": {
+        "navigationBarTitleText": "模型设置"
+      }
+    },
+    {
+      "path": "pages/coach/history",
+      "style": {
+        "navigationBarTitleText": "历史会话",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "FitAgent",
+    "navigationBarBackgroundColor": "#FFFBF1",
+    "backgroundColor": "#FFFBF1"
+  },
+  "tabBar": {
+    "color": "#6B6253",
+    "selectedColor": "#715812",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/home",
+        "text": "首页",
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/plan/list",
+        "text": "训练",
+        "iconPath": "static/tabbar/train.png",
+        "selectedIconPath": "static/tabbar/train-active.png"
+      },
+      {
+        "pagePath": "pages/coach/chat",
+        "text": "教练",
+        "iconPath": "static/tabbar/coach.png",
+        "selectedIconPath": "static/tabbar/coach-active.png"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "static/tabbar/mine.png",
+        "selectedIconPath": "static/tabbar/mine-active.png"
+      }
+    ]
+  }
+}

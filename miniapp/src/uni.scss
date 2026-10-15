@@ -1,0 +1,97 @@
+/**
+ * FitAgent 全局样式变量（uni-app 会把本文件自动注入到所有 scss 里，无需 @import）。
+ *
+ * 排版规范（用户明确要求的高密度信息界面，不是默认小程序字号）：
+ *   - 普通 UI 文本 15px；成段阅读文本（备注、说明、错误详情）19px；
+ *   - 最小可点区域 40px（本项目按钮/行控件统一 44px）；
+ *   - 全站禁止 12–13px 的默认正文字号。
+ *   提示词建议的辅助说明 26rpx（=13px）与上面这条冲突，按用户既有偏好保留 15px，
+ *   差异记录在 docs/ui-style-guide.md。
+ *
+ * 配色主题：奶油底 + 白色卡片 + 淡黄强调（docs/ui-style-guide.md 有完整 token 表与对比度实测值）。
+ *
+ * ⚠️ 两条用法约束，不是审美偏好而是可读性下限：
+ *   1) **$fa-primary / $fa-primary-pressed / $fa-highlight 是"填充色"，永远不能当文字色或图标色**。
+ *      淡黄上的文字与图标一律用 $fa-text 或 $fa-accent。
+ *   2) **$fa-line 只做装饰**（分隔线、卡片轻边框），对比度只有 1.3:1，
+ *      不承载"这是输入框边界""这一项被选中""这是错误"的辨识；那些一律用 $fa-control-border。
+ *   $fa-text-mute 只允许出现在白色/奶油表面上（放在 $fa-highlight 上是 4.34:1，不达标）。
+ *
+ * JS 侧要用的色值（如 <switch> 的 color 属性）在 src/styles/theme.ts，
+ * 两处都要改；改色值时以本文件为准。
+ */
+
+/* ============================== 字号 ============================== */
+$fa-font-ui: 15px; /* 普通 UI 文本（按钮、标签、列表项、输入框） */
+$fa-font-ui-lg: 16px; /* 强调的 UI 文本 */
+$fa-font-prose: 19px; /* 成段阅读文本：备注、说明、错误详情 */
+$fa-font-title: 20px; /* 卡片/页面标题 */
+$fa-font-num: 22px; /* 关键数字 */
+
+/* ============================== 触控尺寸 ============================== */
+$fa-tap-min: 40px; /* 规范下限 */
+$fa-tap: 44px; /* 实际使用的可点区域高度 */
+
+/* ============================== 留白与尺度（750rpx 设计尺度基线） ==============================
+   UI 重渲染提示词 §6 要求"留白充分"，拥挤只能靠层级拆分解决，不许缩字号、压间距。
+   字号仍走上面的 px 高密度尺度（15/19px），间距与图形尺寸走 rpx，让它随屏宽线性放大。 */
+$fa-space-page: 36rpx; /* 页面左右留白（提示词 36–40rpx） */
+$fa-space-section: 32rpx; /* 主要区块间距（28–36rpx） */
+$fa-space-card: 28rpx; /* 卡片内边距（28–32rpx） */
+$fa-space-tight: 16rpx; /* 卡片内元素之间 */
+$fa-space-grid: 24rpx; /* 2 列网格间距 */
+$fa-radius: 24rpx; /* 卡片圆角 */
+$fa-radius-sm: 16rpx; /* 按钮/输入框圆角 */
+$fa-icon-lg: 64rpx; /* 入口图标（56–64rpx） */
+$fa-icon-md: 56rpx;
+$fa-icon-sm: 40rpx; /* 行内小图标 */
+$fa-num-xl: 64rpx; /* 关键数字（52–64rpx） */
+$fa-num-lg: 52rpx;
+$fa-btn-h: 88rpx; /* 按钮交互高度（=44px，与 $fa-tap 同源） */
+$fa-tile-h: 176rpx; /* 图标入口卡最小高度 */
+
+/* ============================== 颜色：表面与填充 ============================== */
+$fa-page-bg: #fffbf1; /* 奶油色页面背景 */
+$fa-surface: #ffffff; /* 卡片、表单、弹窗、聊天消息表面 */
+$fa-primary: #f5d87a; /* 淡黄主按钮、选中区域——只做填充 */
+$fa-primary-pressed: #eacb68; /* 主按钮按压态 */
+$fa-highlight: #fff2bf; /* 轻量重点卡片、标签底 */
+
+/* ============================== 颜色：文字与图形 ============================== */
+$fa-text: #332e24; /* 标题、正文、数字、淡黄按钮上的文字 */
+$fa-text-sub: #6b6253; /* 辅助说明 */
+$fa-text-mute: #7a705f; /* 弱说明与占位；仅限白/奶油表面 */
+$fa-accent: #715812; /* 链接、选中态图标与强调文字（可用于淡黄之上，4.82:1） */
+
+/* ============================== 颜色：边界 ============================== */
+$fa-line: #e9e1cf; /* 装饰分隔线与卡片轻边框，不单独承担辨识 */
+$fa-control-border: #88774f; /* 输入框边界、聚焦描边、选中描边（对白 4.38:1） */
+
+/* ============================== 颜色：语义状态 ============================== */
+$fa-success: #26704b;
+$fa-success-weak: #eaf5ee;
+$fa-warning: #715812; /* 与 $fa-accent 同值：主题里"提醒"就用这枚深金 */
+$fa-warning-weak: #fff2bf;
+$fa-danger: #b53a32;
+$fa-danger-weak: #fcedeb;
+
+/* ---------- 兼容别名（既有页面广泛使用，语义等价，勿在新代码里再用） ---------- */
+$fa-bg: $fa-page-bg;
+$fa-card: $fa-surface;
+$fa-primary-weak: $fa-highlight;
+
+/* uni-app 内置变量（保留，便于三方组件复用） */
+$uni-color-primary: $fa-accent; /* uni 组件把这一项当"前景/链接"用，这里给可读的深金而不是淡黄 */
+$uni-color-success: $fa-success;
+$uni-color-warning: $fa-warning;
+$uni-color-error: $fa-danger;
+$uni-text-color: $fa-text;
+$uni-text-color-grey: $fa-text-sub;
+$uni-bg-color: $fa-page-bg;
+$uni-bg-color-grey: $fa-page-bg;
+$uni-border-color: $fa-line;
+$uni-spacing-row-base: 10px;
+$uni-spacing-col-base: 8px;
+$uni-font-size-sm: $fa-font-ui;
+$uni-font-size-base: $fa-font-ui;
+$uni-font-size-lg: $fa-font-ui-lg;

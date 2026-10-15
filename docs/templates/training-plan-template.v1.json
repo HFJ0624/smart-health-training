@@ -1,0 +1,194 @@
+{
+  "schema_version": "fitagent.training_plan/1",
+  "title": "综合周计划示例（减脂方向）",
+  "starts_on": "2026-10-12",
+  "ends_on": null,
+  "days": [
+    {
+      "iso_weekday": 1,
+      "title": "下肢与上肢拉",
+      "is_rest_day": false,
+      "notes": "先做 5 分钟 ROWING 热身可自行加在动作列表首位",
+      "items": [
+        {
+          "position_no": 1,
+          "exercise_code": "BARBELL_BACK_SQUAT",
+          "target_sets": 4,
+          "reps_min": 8,
+          "reps_max": 10,
+          "target_external_load_kg": 60.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 120,
+          "notes": "杠铃负重按本人情况调整"
+        },
+        {
+          "position_no": 2,
+          "exercise_code": "DUMBBELL_ROW",
+          "target_sets": 3,
+          "reps_min": 10,
+          "reps_max": 12,
+          "target_external_load_kg": 10.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 90,
+          "notes": null
+        },
+        {
+          "position_no": 3,
+          "exercise_code": "LEG_PRESS",
+          "target_sets": 3,
+          "reps_min": 12,
+          "reps_max": 15,
+          "target_external_load_kg": 100.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 90,
+          "notes": "器械不可用时删除本行"
+        },
+        {
+          "position_no": 4,
+          "exercise_code": "PUSH_UP",
+          "target_sets": 3,
+          "reps_min": 10,
+          "reps_max": 20,
+          "target_external_load_kg": 0.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 60,
+          "notes": "自重动作，外部负重记 0"
+        }
+      ]
+    },
+    {
+      "iso_weekday": 2,
+      "title": "有氧",
+      "is_rest_day": false,
+      "notes": null,
+      "items": [
+        {
+          "position_no": 1,
+          "exercise_code": "ROWING",
+          "target_sets": null,
+          "reps_min": null,
+          "reps_max": null,
+          "target_external_load_kg": null,
+          "target_duration_seconds": 1200,
+          "rest_seconds": null,
+          "notes": "20 分钟中等强度"
+        }
+      ]
+    },
+    {
+      "iso_weekday": 3,
+      "title": "休息日",
+      "is_rest_day": true,
+      "notes": "休息日不配置任何动作",
+      "items": []
+    },
+    {
+      "iso_weekday": 4,
+      "title": "上肢推",
+      "is_rest_day": false,
+      "notes": null,
+      "items": [
+        {
+          "position_no": 1,
+          "exercise_code": "BARBELL_BENCH_PRESS",
+          "target_sets": 4,
+          "reps_min": 6,
+          "reps_max": 8,
+          "target_external_load_kg": 50.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 150,
+          "notes": null
+        },
+        {
+          "position_no": 2,
+          "exercise_code": "BARBELL_OVERHEAD_PRESS",
+          "target_sets": 3,
+          "reps_min": 8,
+          "reps_max": 10,
+          "target_external_load_kg": 25.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 120,
+          "notes": null
+        },
+        {
+          "position_no": 3,
+          "exercise_code": "LAT_PULLDOWN",
+          "target_sets": 3,
+          "reps_min": 10,
+          "reps_max": 12,
+          "target_external_load_kg": 35.0,
+          "target_duration_seconds": null,
+          "rest_seconds": 90,
+          "notes": null
+        }
+      ]
+    },
+    {
+      "iso_weekday": 5,
+      "title": "柔韧与活动度",
+      "is_rest_day": false,
+      "notes": "保持型动作按时长记，也可按组+次记",
+      "items": [
+        {
+          "position_no": 1,
+          "exercise_code": "CAT_COW",
+          "target_sets": 2,
+          "reps_min": 8,
+          "reps_max": 10,
+          "target_external_load_kg": null,
+          "target_duration_seconds": null,
+          "rest_seconds": 30,
+          "notes": null
+        },
+        {
+          "position_no": 2,
+          "exercise_code": "HAMSTRING_STRETCH",
+          "target_sets": null,
+          "reps_min": null,
+          "reps_max": null,
+          "target_external_load_kg": null,
+          "target_duration_seconds": 90,
+          "rest_seconds": null,
+          "notes": "单次保持 90 秒，左右各一次"
+        }
+      ]
+    },
+    {
+      "iso_weekday": 6,
+      "title": "低强度有氧",
+      "is_rest_day": false,
+      "notes": null,
+      "items": [
+        {
+          "position_no": 1,
+          "exercise_code": "TREADMILL_WALK_INCLINE",
+          "target_sets": null,
+          "reps_min": null,
+          "reps_max": null,
+          "target_external_load_kg": null,
+          "target_duration_seconds": 2700,
+          "rest_seconds": null,
+          "notes": "45 分钟坡度快走"
+        },
+        {
+          "position_no": 2,
+          "exercise_code": "HIP_FLEXOR_STRETCH",
+          "target_sets": null,
+          "reps_min": null,
+          "reps_max": null,
+          "target_external_load_kg": null,
+          "target_duration_seconds": 120,
+          "rest_seconds": null,
+          "notes": null
+        }
+      ]
+    },
+    {
+      "iso_weekday": 7,
+      "title": "完全休息",
+      "is_rest_day": true,
+      "notes": null,
+      "items": []
+    }
+  ]
+}

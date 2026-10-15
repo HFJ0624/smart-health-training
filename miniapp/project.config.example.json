@@ -1,0 +1,36 @@
+{
+  "appid": "",
+  "projectname": "fitagent-miniapp",
+  "description": "FitAgent 健康训练小程序（P1 基础功能）",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "dist/dev/mp-weixin/",
+  "srcMiniprogramRoot": "dist/dev/mp-weixin/",
+  "libVersion": "2.33.0",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "newFeature": true,
+    "nodeModules": false,
+    "autoAudits": false,
+    "checkInvalidKey": true,
+    "coverView": true,
+    "showShadowRootInWxmlPanel": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  }
+}

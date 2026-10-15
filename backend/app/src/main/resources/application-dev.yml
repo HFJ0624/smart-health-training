@@ -1,0 +1,16 @@
+# 开发环境：显式开启开发登录，便于在没有微信凭据时联调前后端。
+# 该文件不得出现真实 AppSecret；凭据一律来自环境变量。
+fitagent:
+  auth:
+    dev-login:
+      enabled: true
+
+logging:
+  level:
+    com.hfj.fitagent: DEBUG
+    org.springframework.jdbc.datasource.DataSourceTransactionManager: DEBUG
+
+management:
+  endpoint:
+    health:
+      show-details: always

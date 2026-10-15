@@ -1,17 +1,11 @@
-# Compiled class file
+# ---- 构建产物 ----
+target/
+dist/
+unpackage/
+node_modules/
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
+!.mvn/wrapper/maven-wrapper.jar
 *.war
 *.nar
 *.ear
@@ -19,6 +13,47 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# ---- JVM 崩溃日志（GitHub Java 模板里的有用项，保留）----
 hs_err_pid*
 replay_pid*
+.mtj.tmp/
+*.ctxt
+
+# ---- 密钥与本机配置：绝不提交 ----
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.local
+application-local.yml
+application-local.properties
+secrets/
+*.pem
+*.p12
+
+# ---- IDE / 编辑器 ----
+.idea/
+*.iml
+.vscode/
+!.vscode/settings.example.json
+.cursor/
+
+# ---- 运行期 ----
+logs/
+*.log
+tmp/
+temp/
+uploads/
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- 微信开发者工具本地私有配置（含本机路径与调试开关）----
+project.private.config.json
+# DevTools 打开 miniapp 目录时读的入口文件，含本机小程序 AppID（模板见 project.config.example.json）
+miniapp/project.config.json
+
+# ---- 设计包保持原样，可选忽略 ----
+# FitAgent_项目设计/

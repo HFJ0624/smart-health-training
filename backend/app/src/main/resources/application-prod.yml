@@ -1,0 +1,11 @@
+# 生产环境：开发登录不可用（缺省即 false，这里显式写出以防被上层配置覆盖）。
+# 真实的 FITAGENT_WECHAT_SECRET / 数据库口令通过部署环境注入，不进入仓库。
+fitagent:
+  auth:
+    dev-login:
+      enabled: false
+
+logging:
+  level:
+    com.hfj.fitagent: INFO
+    root: WARN

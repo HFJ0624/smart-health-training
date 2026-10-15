@@ -1,0 +1,52 @@
+name: fitagent-infra
+
+# 本地开发用的 MySQL 8.4 与 Redis 7。
+#
+# 为什么端口不是 3306 / 6379：这台机器上已有 MySQL 5.7.19 与 Redis 3.2.100 在跑真实服务，
+# 直接占用默认端口会撞车，也可能诱导人误连到 5.7 上去跑本阶段迁移（5.7 不强制 CHECK，
+# 会让"测试通过"变成假象）。用 13306 / 16379 做物理隔离。
+#
+# 你的数据库跑在你服务器上，本文件就不需要执行；
+# 那时只需把 FITAGENT_MYSQL_URL / FITAGENT_REDIS_HOST 指向服务器即可，代码不用改。
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: fitagent-mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    environment:
+      MYSQL_ROOT_PASSWORD: ${FITAGENT_MYSQL_ROOT_PASSWORD:?必须在 .env 中设置}
+      MYSQL_DATABASE: smart_health_training
+      MYSQL_USER: fitagent
+      MYSQL_PASSWORD: ${FITAGENT_MYSQL_PASSWORD:?必须在 .env 中设置}
+    ports:
+      - "${FITAGENT_MYSQL_HOST_PORT:-13306}:3306"
+    volumes:
+      - fitagent-mysql-data:/var/lib/mysql
+      # 只在建库时执行一次；后续结构变更一律走 Flyway，不要往这里加脚本
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${FITAGENT_MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: fitagent-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${FITAGENT_REDIS_HOST_PORT:-16379}:6379"
+    volumes:
+      - fitagent-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  fitagent-mysql-data:
+  fitagent-redis-data:
