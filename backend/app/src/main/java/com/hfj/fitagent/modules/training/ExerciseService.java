@@ -16,8 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * 动作字典读取（docs/p1-api.md §6）。本轮<b>只读</b>：
@@ -134,6 +138,30 @@ public class ExerciseService {
             sb.append(c);
         }
         return sb.toString();
+    }
+
+    /**
+     * 按 id 批量取字典项，供跨模块（workout 详情、metrics 统计）显示动作名与分类。
+     *
+     * <p>这是 training 模块对外暴露的**只读**字典入口：别的模块不直接碰 ExerciseReferenceMapper。
+     * 空入参直接返回空 Map——MyBatis-Plus 对空集合会生成 {@code IN ()}，在 MySQL 里是语法错误。
+     * 找不到的 id 不会出现在结果里，由调用方决定是"未解析"还是报错，这里不替调用方猜。
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, ExerciseVo> mapByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> distinct = new ArrayList<>(new java.util.LinkedHashSet<>(ids));
+        distinct.removeIf(java.util.Objects::isNull);
+        if (distinct.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, ExerciseVo> out = new HashMap<>();
+        for (ExerciseReferenceEntity row : mapper.selectBatchIds(distinct)) {
+            out.put(row.getId(), toVo(row));
+        }
+        return out;
     }
 
     private static ExerciseVo toVo(ExerciseReferenceEntity row) {

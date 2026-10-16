@@ -1,6 +1,8 @@
 package com.hfj.fitagent.modules.profile;
 
 import com.hfj.fitagent.modules.profile.entity.BodyMeasurementEntity;
+import com.hfj.fitagent.modules.training.entity.TrainingPlanEntity;
+import com.hfj.fitagent.modules.workout.entity.WorkoutSessionEntity;
 import com.hfj.fitagent.modules.profile.entity.UserGoalEntity;
 import com.hfj.fitagent.modules.profile.entity.UserProfileEntity;
 import org.junit.jupiter.api.Assumptions;
@@ -27,8 +29,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class GeneratedColumnGuardTest {
 
+    /** 三张带 active_user_id 生成列的表：user_goal、training_plan、workout_session。 */
     private static final List<Class<?>> ENTITIES = List.of(
-            UserGoalEntity.class, UserProfileEntity.class, BodyMeasurementEntity.class);
+            UserGoalEntity.class, UserProfileEntity.class, BodyMeasurementEntity.class,
+            TrainingPlanEntity.class, WorkoutSessionEntity.class);
 
     @Test
     @DisplayName("实体不声明 active_user_id：从源头杜绝向 STORED 生成列写入")
@@ -44,39 +48,45 @@ class GeneratedColumnGuardTest {
     }
 
     @Test
-    @DisplayName("模块源码（去掉注释后）不出现 active_user_id / activeUserId 这两个标识符")
+    @DisplayName("带闸门列的模块源码（去掉注释后）不出现 active_user_id / activeUserId 这两个标识符")
     void moduleSourceNeverReferencesTheGeneratedColumn() throws IOException {
-        Path sourceRoot = moduleSourceRoot();
-        Assumptions.assumeTrue(sourceRoot != null && Files.isDirectory(sourceRoot),
-                "源码目录不可用（非 Maven 工作目录运行），跳过源码扫描");
+        List<Path> roots = moduleSourceRoots();
+        Assumptions.assumeTrue(!roots.isEmpty(), "源码目录不可用（非 Maven 工作目录运行），跳过源码扫描");
 
         List<String> offenders = new ArrayList<>();
-        try (Stream<Path> files = Files.walk(sourceRoot)) {
-            for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
-                String code = stripComments(Files.readString(file, StandardCharsets.UTF_8));
-                if (code.contains("activeUserId") || code.contains("active_user_id")) {
-                    offenders.add(sourceRoot.relativize(file).toString());
+        for (Path root : roots) {
+            try (Stream<Path> files = Files.walk(root)) {
+                for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                    String code = stripComments(Files.readString(file, StandardCharsets.UTF_8));
+                    if (code.contains("activeUserId") || code.contains("active_user_id")) {
+                        offenders.add(root.getParent().relativize(file).toString());
+                    }
                 }
             }
         }
         assertThat(offenders).isEmpty();
     }
 
-    /** surefire 的工作目录是模块基目录（backend/app）；从那里向上找源码路径。 */
-    private static Path moduleSourceRoot() {
-        String fragment = "com/hfj/fitagent/modules/profile";
-        List<String> candidates = List.of(
-                "src/main/java/" + fragment,
-                "app/src/main/java/" + fragment,
-                "../app/src/main/java/" + fragment,
-                "../" + fragment);
-        for (String candidate : candidates) {
-            Path path = Path.of(candidate);
-            if (Files.isDirectory(path)) {
-                return path.toAbsolutePath().normalize();
+    /**
+     * 只扫"自己拥有闸门列"的那几个模块。
+     *
+     * <p>为什么不扫全仓：{@code PlanImportParsers} 的"服务端专属字段拒绝清单"里合法地列着
+     * {@code active_user_id}（导入时见到就报 UNKNOWN_FIELD），那是防线而不是违规。
+     */
+    private static List<Path> moduleSourceRoots() {
+        List<String> fragments = List.of("com/hfj/fitagent/modules/profile", "com/hfj/fitagent/modules/workout");
+        List<String> prefixes = List.of("src/main/java/", "app/src/main/java/", "../app/src/main/java/", "../");
+        List<Path> found = new ArrayList<>();
+        for (String fragment : fragments) {
+            for (String prefix : prefixes) {
+                Path path = Path.of(prefix + fragment);
+                if (Files.isDirectory(path)) {
+                    found.add(path.toAbsolutePath().normalize());
+                    break;
+                }
             }
         }
-        return null;
+        return found;
     }
 
     private static String stripComments(String source) {

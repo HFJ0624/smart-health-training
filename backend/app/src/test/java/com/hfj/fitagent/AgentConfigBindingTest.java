@@ -42,6 +42,11 @@ class AgentConfigBindingTest {
         List<PropertySource<?>> sources = new YamlPropertySourceLoader()
                 .load("application.yml", resource);
         StandardEnvironment environment = new StandardEnvironment();
+        // 必须先把宿主环境摘掉：按 docs/run-and-test.md §1 先 `source infra/.env` 再跑测试时，
+        // 真实进程里的 FITAGENT_MASTER_KEY 会让下面"默认未配置"的断言假失败（2026-10-16 实测）。
+        // 摘掉之后占位符仍会解到 yml 自己写的默认值（空串），断言的语义才是"配置文件里的默认值"。
+        environment.getPropertySources().remove("systemEnvironment");
+        environment.getPropertySources().remove("systemProperties");
         sources.forEach(source -> environment.getPropertySources().addFirst(source));
         // 占位符解析必须走整个 Environment：${FITAGENT_MASTER_KEY:} 这类默认值只在 Environment 里才解得开
         binder = new Binder(ConfigurationPropertySources.from(sources),

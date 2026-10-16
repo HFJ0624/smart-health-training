@@ -35,6 +35,13 @@
 3. **禁止配置 `mybatis-plus.type-handlers-package`**：`Jackson3TypeHandler` 无无参构造，包扫描会 `NoSuchMethodException`。逐个字段声明。
 4. 附带：MP 3.5.9+ 把 `PaginationInnerInterceptor` / `BlockAttackInnerInterceptor` 拆到了 `mybatis-plus-jsqlparser`，不引这个包分页会静默失效。
 
+## 注释里不要写条件编译指令的原文
+
+`pages/plan/import.vue` 有两处**注释**复述了 `// #ifdef MP-WEIXIN`，uni-app 预处理器按纯文本扫描，把注释里的孤立指令当成真指令去配对，构建日志直接报
+`条件编译失败: #ifdef/#ifndef 缺少配对的 #endif`，整个文件的分支裁剪按"配对不完整"处理——被裁掉的可能是微信选文件那整段（`wx.chooseMessageFile` + `readFile`）。
+`vue-tsc` 与 `check:theme` 对此**全绿**，只有构建日志说话（2026-10-16 修，实测告警清零）。
+所以：条件编译指令只写在真正要裁剪的代码里，注释里要提就写"微信端条件编译分支"，不要写出指令原文。
+
 ## 架构边界
 
 - 一个 Spring Boot 应用，按 `modules/{auth,profile,training}` 分包。模块内 `controller → service → mapper`，`entity` 永不出现在响应里。
@@ -51,7 +58,11 @@
 - 时间存 UTC，业务日期由服务端按用户时区推导，客户端不传。BigInt 在 JSON 里是字符串。
 - 校验只做单位/正数/长度/枚举/日期格式。**不引入任何未经说明的医学阈值**。
 - 计划是聚合根：头+日+条目一次事务写入，任一失败全量回滚。删除子行的顺序是先 item 后 day（外键 RESTRICT）。
-  ⚠ P1 之所以能"删旧插新"，是因为还没有 `workout_session` 引用计划日；P2 接入打卡后必须改成增量更新。
+  ✅ 阶段 2 的解法（2026-10-16 已核实代码，不是计划）：**不改成增量更新，而是禁止引用可被删的版本**。
+  就地编辑的删旧插新只作用于 DRAFT（`TrainingPlanService:136` 的 `requireStatus(..., DRAFT)` 挡住生效/归档版本，
+  生效版本的修改走 revise/copy 出**新行新 id**），而 `WorkoutService.resolveReference` 明确拒绝 DRAFT 计划作为参考，
+  所以 `workout_session`/`workout_session_entry` 永远指不到会被物理删除的行上。
+  ⚠ 任何人若要放开「就地编辑 ACTIVE」，必须先同时放开这两处守卫，届时才真的需要增量更新 —— 改之前先读这条。
 
 ## DeepSeek 接入硬规则（协议已核查，别靠记忆）
 
@@ -73,7 +84,10 @@
 
 **Agent 第一版（代码与装配完成，2026-10-14）**：单 Agent + 原生工具调用 + 有上限的执行循环；BYOK 凭据加密、余额快照、版本化价格、预算预占与幂等结算；会话/run 持久化、取消与重启恢复；工具只注册 `get_profile`、`get_training_plan`、`get_weight_trend` 三个有真实业务支撑的。本机证据：`mvn test` 352 用例 0 失败、`vue-tsc` 0 错误、`build:mp-weixin` 通过。仍未做且不能声称已做：真实 DeepSeek 联调、真库并发/约束验证、prod 启动实证（`docs/agent-v1-acceptance.md` §3 逐条标注）。范围与取舍见 `docs/agent-v1-design.md`；能力缺口见 `docs/agent-v1-baseline.md`；自研清单见 `docs/agent-v1-selfbuilt.md`。
 
-**仍然不做**：饮食识别、能耗公式与医学阈值、RAG/向量库、文件上传、Python 服务、教学视频、MCP、多 Agent、自动修改或激活训练计划、**训练执行记录与完成度统计**（`workout_session/entry/set` 与 metrics 不存在，因此"今天完成多少"这类问题本轮无工具可答 —— 宁可少注册工具，也不要为示范效果伪造业务）。
+**阶段 2（训练执行记录与基础统计，代码与装配完成，2026-10-16）**：`workout_session` / `workout_session_entry` / `workout_session_set` 三表（V23–V25）、开始→逐组记录→草稿续填→确认结束→当天对比与周基础统计，以及 `get_training_progress`、`get_weekly_training_summary` 两个 Agent 工具（`CoachToolNames.ALL` 现为 5 个，白名单由它单点定义，**不要再在任何地方写死工具数量**）。本机证据：`mvn -B -pl app test` 422 用例 0 失败、`vue-tsc` 0 错误、`check:theme` 通过、`build:mp-weixin` 通过。仍未验证：真库约束与并发、真机 UI、真实 DeepSeek（`docs/stage2-acceptance.md` §4 逐条给复现方式）。⚠ 迁移序号说明：`docs/agent-v1-*` 里预留为 V23 的**模型与价格种子迁移现在轮到 V26**。设计见 `docs/stage2-design.md`，验收见 `docs/stage2-acceptance.md`。三条硬口径：**草稿不计正式统计**、**`is_completed` 只由用户给出**、**统计是确定性计算，不引入任何训练效果分或医学结论**。
+
+**仍然不做**：饮食识别、能耗公式与医学阈值、RAG/向量库、文件上传、Python 服务、教学视频、MCP、多 Agent、自动修改或激活训练计划、**AI 生成/修改训练计划**（要等预算与真实费用有证据之后，且只能出草稿）、为纯统计预建日报/周报持久表。
+⚠ 历史文档（含 `docs/agent-v1-*.md` 与本轮之前的报告）里"训练执行记录与完成度统计不做"的说法已被本次授权取代，读到时应以本节为准。
 
 不要在页面上放占位按钮或假成功提示，也不要为未来功能建空类。缺能力就从注册表/入口里拿掉，不要在文档与 UI 里声称已支持。
 

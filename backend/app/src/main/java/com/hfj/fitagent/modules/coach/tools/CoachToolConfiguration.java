@@ -45,7 +45,7 @@ public class CoachToolConfiguration {
      */
     @Bean(name = "coachAllowedTools")
     public Set<String> coachAllowedTools() {
-        return Set.of(CoachToolNames.GET_PROFILE, CoachToolNames.GET_TRAINING_PLAN,
-                CoachToolNames.GET_WEIGHT_TREND);
+        // 由 CoachToolNames.ALL 派生：再加工具时只需要改那一处 + 注册一个 AgentTool Bean
+        return CoachToolNames.ALL;
     }
 }

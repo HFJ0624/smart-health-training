@@ -309,11 +309,12 @@
         </view>
         <view v-if="isOpen('scope')" class="cc-fold__body">
           <text class="fa-prose">
-            本轮 AI 教练只接入三个真实工具：档案与目标、当天训练计划、体重变化。
+            AI 教练接入五个真实工具：档案与目标、当天训练计划、体重变化、当天训练完成、本周训练统计。
             它会先给出费用预估，确认后才提交任务。
           </text>
           <text class="fa-muted cc-line">
-            仓库里还没有训练执行记录（打卡）业务，因此「今天完成度如何」这类问题本轮无工具可答，页面不提供该入口。
+            「今天练得怎么样」这类问题现在可答：它读的是你自己填并点过「结束」确认的正式记录（workout_session），
+            草稿与丢弃的场次不计入。数字全部来自服务端统计口径，模型不重新计算，也不给训练效果或医学结论。
           </text>
           <text class="fa-muted cc-line">快捷入口对应的数据来源：{{ quickToolNote }}。</text>
           <text class="fa-muted cc-line">
@@ -474,6 +475,8 @@ const MESSAGE_PAGE_LIMIT = 50
  */
 const QUICK_QUESTIONS: Array<{ text: string; tool: string | null; label: string }> = [
   { text: '今天安排练什么？', tool: 'get_training_plan', label: '今日计划' },
+  { text: '今天练得怎么样？', tool: 'get_training_progress', label: '今日完成' },
+  { text: '这周练了几次？', tool: 'get_weekly_training_summary', label: '本周统计' },
   { text: '最近体重怎么变化？', tool: 'get_weight_trend', label: '体重趋势' },
   { text: '我的档案和目标是什么？', tool: 'get_profile', label: '档案目标' },
   { text: '新手一般怎么安排热身？', tool: null, label: '热身常识' }

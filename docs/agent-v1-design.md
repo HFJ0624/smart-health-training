@@ -199,7 +199,7 @@ RunLimits(maxModelCalls=4, maxToolCalls=8, maxToolsPerRound=4,
 | V20 | `model_call` | `run_id + attempt_no` 唯一；`reservation_id` 唯一（保证一次结算）；三个 token 分项 + usage 原文 + 单价快照 + 币种 |
 | V21 | `agent_step` | `(run_id, step_no)` 唯一；`arguments_redacted`、`result_summary`、耗时、错误码 |
 | V22 | `chat_message` | `(conversation_id, message_no)` 唯一；role、正文、tool_calls/citations 结构化列、`run_id` |
-| V23 | 种子：provider + catalog + price | 取值全部来自 `agent-v1-protocol.md` 的核查，附来源 URL 与核查日期；**无核查通过则本迁移不落地，改为空占位并在 acceptance 标注** |
+| V23（**已让位给阶段 2 三表，实际序号 V26**） | 种子：provider + catalog + price | 取值全部来自 `agent-v1-protocol.md` 的核查，附来源 URL 与核查日期；**无核查通过则本迁移不落地，改为空占位并在 acceptance 标注** |
 
 关键设计点：
 

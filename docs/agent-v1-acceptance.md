@@ -37,7 +37,7 @@
 ## 3. 未实现 / 未验证（不写成通过）
 
 1. ⬜ **训练执行记录与完成度统计**：`workout_session/entry/set` 与 metrics 不存在，因此"今天完成多少""本周练了几次"本轮**无工具可答**。按 B2 只注册 3 个真实有支撑的工具，不伪造业务。B14 第 8 项（3+3 计划、5+0 实际 → 50%）与 A3 的演示数据因此**不在本轮验收范围**。
-2. ⬜ **模型与价格种子迁移**（V23）。`deepseek-v4-pro` 由哪个模型服务、按哪档计费，官方两条公告互相矛盾，无 Key 无法实测 → 不写死、不猜。
+2. ⬜ **模型与价格种子迁移**（原预留 V23；V23–V25 已被阶段 2 三表占用，**实际序号为 V26**）。`deepseek-v4-pro` 由哪个模型服务、按哪档计费，官方两条公告互相矛盾，无 Key 无法实测 → 不写死、不猜。
 3. ⛔ **真实 DeepSeek 联调**：无用户凭据，未发起任何收费请求。真实协议兼容性（多轮 `tool_calls` 配对、`finish_reason` 边界、usage 实际填充）只有供应商能证明。
 4. ⛔ **Spring 上下文启动与数据库侧并发**：本机无可连的 MySQL 8.4（在用 5.7 不满足 V1 的 `utf8mb4_0900_ai_ci`/CHECK/生成列），因此
    - `@ConfigurationPropertiesScan` 下所有新 bean 的**实际装配**（DeepSeekClient ← AgentCredentialResolverAdapter、AgentRunner ← BudgetedModelCallGateway ← BudgetGate）只有编译与逐类型构造证据，没有容器启动证据；
@@ -84,7 +84,7 @@
    - 起后端，确认 Flyway V18–V22 迁移在真库生效；或直接执行 `docs/sql/agent-v1-coach-and-foundation-mysql-8.4.sql` 并置 `FITAGENT_FLYWAY_ENABLED=false`；
    - `SPRING_PROFILES_ACTIVE=prod` + `FITAGENT_AGENT_FAKE_MODEL_ENABLED=true` 启动一次，**必须失败**（红线 7 的唯一实证）；
    - 补做 §3 第 4 条标 ⛔ 的并发/约束项，并跑 §5 评测集（需要用户主动提供的测试凭据与既有预算，规模保持很小）。
-2. 用户核对当期计费后，出 V23 模型/价格种子迁移。
+2. 用户核对当期计费后，出 V26 模型/价格种子迁移。
 3. 微信开发者工具里点一遍 `pages/coach/chat` 的发送 → 轮询 → 取消 → 离开页面重进入，以及 `pages/mine/model-settings` 的保存/撤销/余额/预算四件事。
 4. 可选加固：`RunWorker` 的租约续期在真库并发下的"两个 Worker 抢同一 run"用例；`AgentStepWriter` 的脱敏断言目前只有 `TraceRedaction` 单测间接覆盖。
 

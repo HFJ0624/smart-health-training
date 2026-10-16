@@ -14,12 +14,14 @@ backend/                      Spring Boot 4.1.1 + Java 17 单应用，按模块�
     modules/modelaccess/      BYOK：供应商白名单、模型目录、报价、凭据加密、余额
     modules/billing/          钱：预算闸门、预占、结算、成本计算
     modules/coach/            AI 教练：会话/run、业务工具、费用关口、后台 Worker
+    modules/workout/          阶段 2：实际训练场次/动作/逐组，开始-恢复-保存-结束-丢弃-删除
+    modules/metrics/          阶段 2：当天计划对比与周基础统计（只读、确定性计算，不建报表）
     agent/                    自研执行核心（core/model/tool/context/trace/answer/fake）
-  app/src/main/resources/db/migration/  Flyway V1..V22，只向前
-  app/src/test/java/          357 个用例（不连库、不起 Docker、不发网络）
+  app/src/main/resources/db/migration/  Flyway V1..V25，只向前
+  app/src/test/java/          422 个用例（不连库、不起 Docker、不发网络）
 miniapp/                      uni-app + Vue 3 + TS
-  src/pages/…                14 个页面（pages.json 是唯一路由清单）
-  src/components/…           11 个组件
+  src/pages/…                17 个页面（pages.json 是唯一路由清单）
+  src/components/…           20 个组件
   src/api/ + src/types/      一个后端接口配一个函数、一套类型
   src/utils/                 request 封装、错误文案、事件取值、日期/单位、存储
   src/uni.scss + src/styles/theme.ts + src/App.vue   主题三件套
@@ -35,7 +37,7 @@ infra/                       .env.example 与 docker-compose（本机未执行�
 | 统一响应 | `common/web/ApiResponse` | `code/message/data/traceId/serverTime`；前端只按 `code` 分支 |
 | 错误码 | `common/error/ErrorCode` + `GlobalExceptionHandler` | 越权与不存在同形（404）；字段错误在 `data.fields`；BigInt 出参是字符串 |
 | 幂等 | `common/IdempotencyService`（Redis 24h）与数据库唯一索引 | 计划导入确认用 Redis；AI run 用 `UNIQUE(user_id, idempotency_key)`，因为 run 需要可查询的持久状态 |
-| 数据修订号 | `modules/profile/service/AccountRowGuard`、`modules/training/PlanRevisionTicker`、`modules/coach/support/CoachDataRevisionReader` | 写业务数据同事务 `+1`；AI 结果据此判断 `isStale`。三个文件是**仅有的**跨模块读 `user_account` 的地方 |
+| 数据修订号 | `modules/profile/service/AccountRowGuard`、`modules/training/PlanRevisionTicker`、`modules/coach/support/CoachDataRevisionReader`、`modules/metrics/support/MetricsDataRevisionReader` | 写业务数据同事务 `+1`；AI 结果据此判断 `isStale`，统计读数据此标口径。这四个文件是**仅有的**跨模块读 `user_account` 的地方，后两个都只是单方法只读小件（`MetricsBoundaryGuardTest` 守住范围） |
 | 计划聚合 | `modules/training/TrainingPlanService`（写路径 create/update/revise/copy 内部一次事务写头+日+条目），校验在 `PlanAggregateValidator` | 任一失败全量回滚；删除子行顺序是先 item 后 day（外键 RESTRICT） |
 | 派生列 | `V1..V22` 里的 `active_user_id` / `active_conversation_id` | STORED 生成列，实体不声明、任何写入不带它；"每用户一个 ACTIVE""每会话一个活动 run" 靠 UNIQUE + 数据库 |
 
@@ -51,7 +53,8 @@ CoachController（/api/coach/**，取 userId 与时区）
                  └─ agent/core/AgentRunner        ★ 自研循环：次数/截止/取消/重复 → 调用 → 配对 → 停止
                       ├─ ModelCallGateway 接口 → BudgetedModelCallGateway（modules/coach/gateway）
                       │     BudgetGate.reserve → model_call 台账 → DeepSeekClient → UsageSettlement
-                      ├─ ToolExecutor → ToolRegistry → modules/coach/tools/Get*Tool → P1 业务 Service
+                      ├─ ToolExecutor → ToolRegistry → modules/coach/tools/Get*Tool → 业务 Service
+                      │     （5 个工具：profile / training / body / workout+metrics 当天 / metrics 周）
                       ├─ ContextManager → ConversationContext（工具组配对合法性、按轮次裁剪）
                       ├─ TraceRecorder → AgentStepWriter（agent_step，脱敏、可丢）
                       └─ AnswerAssembler → CitationValidator → AgentAnswer（事实卡片由服务端取值）
@@ -69,7 +72,10 @@ CoachController（/api/coach/**，取 userId 与时区）
 |---|---|---|
 | `pages/auth/login` | `/api/auth/*` | 探活失败必须留页并说明；`takeSessionExpiredNotice()` 在此消费一次 |
 | `pages/index/home`（tab） | `/api/body-records`、`/api/plans/today`、`/api/plans/{id}` | 只显示真实已有指标；四块内容各自独立请求与五态 |
-| `pages/plan/list`（tab） | `GET /api/plans` | 排序/筛选改动必须触发重取，且旧请求要按代次作废 |
+| `pages/plan/list`（tab） | `GET /api/plans` | 排序/筛选改动必须触发重取，且旧请求要按代次作废；页顶「计划/记录/统计」二级结构里另两段是 `navigateTo` 去 workout 页 |
+| `pages/workout/record` | `POST /api/workout/sessions`（开始或恢复）、`GET/PUT /api/workout/sessions/{id}`、`POST …/complete\|discard`、`DELETE …/{id}` | 幂等键在 `onLoad` 生成一次、失败重试复用同值；带 `?sessionId=` 时**只走 GET**（重放开始接口会被服务端判成幂等冲突）；`is_completed` 只由用户勾选产生；409 先问再重载 |
+| `pages/workout/history` | `GET /api/workout/sessions`（分页 + 状态筛选）、`GET /api/workout/sessions/{id}`（原地展开详情） | 本页不写数据；换筛选/翻页用请求代次作废旧响应；草稿行的唯一落点是续填同一场 |
+| `pages/workout/stats` | `GET /api/metrics/training/days/{date}`、`GET /api/metrics/training/weeks/{monday}` | 数字一律直接渲染服务端 `Metric`（页面零计算）；`value=null` 显示「—」+ 原因，**不显示 0% 或 100%**；周层面没有任何百分比路径 |
 | `pages/plan/detail` | `/api/plans/{id}/activate\|archive\|discard\|revise\|copy`（都带 `lockVersion`） | 动作失败要在计划日区域之外也可见（零计划日的草稿容易吞掉提示） |
 | `pages/plan/edit` | `POST/PUT /api/training-plans` | 版本冲突后**先问再重载**，不能丢用户输入 |
 | `pages/plan/import` | `POST /api/plans/import/preview`（无副作用）、`POST /api/plans/import`（确认） | 只有确认那一步带 `Idempotency-Key`；返回状态必须仍是 DRAFT |

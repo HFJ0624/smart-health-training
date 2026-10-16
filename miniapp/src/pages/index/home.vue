@@ -21,7 +21,10 @@
       @retry="loadToday"
     >
       <template #action>
-        <view class="fa-btn fa-btn--primary" @tap="goNewPlan">新建</view>
+        <view class="fa-btn-row home__empty-actions">
+          <view class="fa-btn fa-btn--primary" @tap="goNewPlan">新建</view>
+          <view class="fa-btn" @tap="goPlans">计划</view>
+        </view>
       </template>
 
       <view class="home__hero" hover-class="home__hero--hover" @tap="onHeroTap">
@@ -34,6 +37,8 @@
           {{ heroAction }}
         </view>
       </view>
+      <!-- 进行中记录读不到时不猜：明说读不到，主操作仍按今日计划给 -->
+      <text v-if="draftHint" class="fa-hint home__draft-hint">{{ draftHint }}</text>
     </StateBlock>
 
     <!-- ========== 区域三：四个常用图标入口（一个图标 + 两字标签 + 一个落点） ========== -->
@@ -41,7 +46,8 @@
       <FaIconTile icon="weight" label="体重" :hint="weightTileHint" @tap="goWeight" />
       <FaIconTile icon="calendar" label="计划" hint="本周安排" @tap="goPlans" />
       <FaIconTile icon="robot" label="教练" hint="问一句" @tap="goCoach" />
-      <FaIconTile icon="upload" label="导入" hint="JSON 计划" @tap="goImport" />
+      <!-- 导入入口没有消失：它留在训练计划页的工具条里（pages/plan/list.vue） -->
+      <FaIconTile icon="dumbbell" label="训练" :hint="workoutTileHint" @tap="goWorkout" />
     </view>
 
     <!-- ========== 区域四：两个轻量数据组件（点按进对应详情） ========== -->
@@ -78,8 +84,9 @@
  * 首页（UI 重排 §4）：只做"今天该干什么 + 去哪"，四块内容各自独立请求、独立五态，
  * 任何一块失败都不该把整页变成空白或假数据。
  *
- * 刻意不放的东西：档案 KV（归「我的」）、计划编辑/导入表单、训练完成度与训练日历——
- * 阶段 2 的 workout_session 还不存在，没有真实数据就不画进度环（docs/ui-render-plan.md §4）。
+ * 阶段 2 之后今日主卡的唯一主操作由真实状态推导（docs/stage2-design.md §8）：
+ * 有进行中草稿=继续 → 今天有安排且无草稿=开始 → 休息日=休息 → 无生效计划=计划/新建。
+ * 仍然不画进度环：`workout_session` 的统计口径归 metrics，本轮首页只报"有没有正在记的这一场"。
  */
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
@@ -91,9 +98,11 @@ import FaTrendChart from '@/components/FaTrendChart.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { fetchBodyRecords } from '@/api/body'
 import { fetchPlan, fetchTodayPlan } from '@/api/training'
+import { fetchDraftWorkoutSession } from '@/api/workout'
 import { WEEKDAY_LABELS } from '@/types/training'
 import type { BodyRecord } from '@/types/body'
 import type { TodayPlanResult } from '@/types/training'
+import type { WorkoutSessionSummary } from '@/types/workout'
 import type { StripCell, TrendPoint } from '@/types/ui'
 import type { FaIconName } from '@/styles/icon-names'
 import type { PageState } from '@/types/api'
@@ -112,6 +121,9 @@ const today = ref<TodayPlanResult | null>(null)
 const records = ref<BodyRecord[]>([])
 const weekCells = ref<StripCell[]>([])
 const weekEmptyText = ref('')
+/** 唯一进行中草稿（数据库 `UNIQUE(active_user_id)` 保证至多一条）；null 也可能是"没读到"，见 draftHint。 */
+const draft = ref<WorkoutSessionSummary | null>(null)
+const draftHint = ref('')
 
 const todayState = ref<PageState>('loading')
 const weightState = ref<PageState>('loading')
@@ -134,12 +146,25 @@ async function loadToday(): Promise<void> {
   try {
     const result = await fetchTodayPlan()
     today.value = result
-    // 没有 ACTIVE 计划也算"有内容的成功态"：页面要区分"未设置计划"与"计划今天不安排"
-    todayState.value = result.activePlanId ? 'success' : 'empty'
+    await loadDraft()
+    // 有草稿就算成功态：否则计划被归档后「继续」这条路会从首页消失
+    todayState.value = result.activePlanId || draft.value ? 'success' : 'empty'
     await loadWeek(result.activePlanId)
   } catch (err) {
     todayFailure.value = toFailureView(err)
     todayState.value = failState(err)
+  }
+}
+
+/** 草稿这一块尽力而为：读失败只降级成一行说明，不把今日主卡整块变成错误态。 */
+async function loadDraft(): Promise<void> {
+  draft.value = null
+  draftHint.value = ''
+  try {
+    draft.value = await fetchDraftWorkoutSession()
+  } catch (err) {
+    if (err instanceof ApiError && (err.code === 'UNAUTHENTICATED' || err.code === 'SESSION_EXPIRED')) throw err
+    draftHint.value = '进行中的训练记录读取失败，重进本页可再试；下面按钮按今日计划显示。'
   }
 }
 
@@ -191,14 +216,18 @@ function failState(err: unknown): PageState {
 }
 
 /* ---------- 今日主卡文案：状态由真实字段推导，缺就明说缺 ---------- */
+/** 草稿优先于计划：正在记的那一场比"今天计划练什么"更是用户下一步要做的事。 */
 const heroIcon = computed<FaIconName>(() => {
+  if (draft.value) return 'dumbbell'
   const t = today.value
   if (!t || !t.activePlanId) return 'calendar'
-  if (!t.day) return 'moon'
+  if (!t.day) return 'calendar'
   return t.day.isRestDay ? 'moon' : 'dumbbell'
 })
 
 const heroTitle = computed(() => {
+  const d = draft.value
+  if (d) return `训练进行中 · ${d.businessDate}`
   const t = today.value
   if (!t) return '今天'
   const day = t.isoWeekday ? WEEKDAY_LABELS[t.isoWeekday] ?? '今天' : '今天'
@@ -209,26 +238,44 @@ const heroTitle = computed(() => {
 })
 
 const heroDesc = computed(() => {
+  const d = draft.value
+  if (d) {
+    return d.entryCount === 0
+      ? '这一场还没记动作，点「继续」逐组勾'
+      : `${d.entryCount} 个动作 · 已确认 ${d.completedSetCount} 组（未勾的不算完成）`
+  }
   const t = today.value
   if (!t) return ''
-  if (!t.activePlanId) return '先去建立或导入一份计划'
+  if (!t.activePlanId) return '先建立或导入一份计划，确认生效后这里会出现今天的安排'
   if (!t.day) return `版本 v${t.revisionNo}，今天不在周期内`
-  if (t.day.isRestDay) return t.day.notes || '今天不练'
+  if (t.day.isRestDay) return `${t.day.notes ? `${t.day.notes} · ` : ''}今天不练；想练的话从下方「训练」自主记录`
   return `${t.day.items.length} 个动作 · 版本 v${t.revisionNo}`
 })
 
+/** 唯一主操作：继续 / 开始 / 休息 / 计划（无计划时的空态另有「新建」）。 */
 const heroAction = computed(() => {
+  if (draft.value) return '继续'
   const t = today.value
-  if (!t || !t.activePlanId) return '新建'
-  return t.day && !t.day.isRestDay ? '查看' : '计划'
+  if (!t || !t.activePlanId) return '计划'
+  if (!t.day) return '计划'
+  return t.day.isRestDay ? '休息' : '开始'
 })
 
 function onHeroTap(): void {
-  const t = today.value
-  if (!t || !t.activePlanId) {
-    goNewPlan()
+  if (draft.value) {
+    goWorkout()
     return
   }
+  const t = today.value
+  if (!t || !t.activePlanId) {
+    goPlans()
+    return
+  }
+  if (t.day && !t.day.isRestDay) {
+    goWorkout()
+    return
+  }
+  // 休息日与"今天没安排"都只有一个去处：看整周安排（训练 tab / 计划详情）
   goPlanDetail(t.activePlanId)
 }
 
@@ -289,9 +336,29 @@ function goCoach(): void {
   uni.switchTab({ url: '/pages/coach/chat' })
 }
 
-function goImport(): void {
-  uni.navigateTo({ url: '/pages/plan/import' })
+function goWorkout(): void {
+  uni.navigateTo({ url: workoutUrl() })
 }
+
+/**
+ * 「开始」与「继续」都落在训练记录页，区别只在带不带参考：
+ * 已有草稿时**不带** planId/planDayId——服务端单草稿闸门会回同一场，
+ * 而带上参考会让跨天再进的请求先在「业务日期星期 ≠ 计划日星期」上被撞掉（WorkoutService.resolveReference）。
+ */
+function workoutUrl(): string {
+  if (draft.value) return '/pages/workout/record'
+  const t = today.value
+  if (t && t.activePlanId && t.day && !t.day.isRestDay) {
+    return `/pages/workout/record?planId=${encodeURIComponent(t.activePlanId)}&planDayId=${encodeURIComponent(t.day.id)}`
+  }
+  return '/pages/workout/record'
+}
+
+const workoutTileHint = computed(() => {
+  if (draft.value) return '继续这一场'
+  const t = today.value
+  return t && t.day && !t.day.isRestDay ? '开始今天' : '自主记录'
+})
 
 function goNewPlan(): void {
   uni.navigateTo({ url: '/pages/plan/edit' })
@@ -382,6 +449,16 @@ function goPlanDetail(id: string | null): void {
 /* 主卡里只允许这一个按钮 */
 .home__hero-btn {
   flex: 0 0 auto;
+}
+
+/* 空态给两个真去处：新建（主）/ 计划（次），都是真实落点，没有占位按钮 */
+.home__empty-actions {
+  width: 100%;
+}
+
+.home__draft-hint {
+  display: block;
+  margin: 0 0 $fa-space-section;
 }
 
 .home__trend,

@@ -77,6 +77,26 @@
       }
     },
     {
+      "path": "pages/workout/record",
+      "style": {
+        "navigationBarTitleText": "训练记录"
+      }
+    },
+    {
+      "path": "pages/workout/history",
+      "style": {
+        "navigationBarTitleText": "训练历史",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/workout/stats",
+      "style": {
+        "navigationBarTitleText": "训练统计",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/mine/model-settings",
       "style": {
         "navigationBarTitleText": "模型设置"

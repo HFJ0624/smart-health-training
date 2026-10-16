@@ -20,6 +20,13 @@
 
     <FaMoreMenu v-model:open="moreOpen" :items="MORE_ITEMS" @select="onMoreSelect" />
 
+    <!-- 训练模块的二级结构：计划 / 记录 / 统计。本页恒为「计划」，点另两段是离开本页去对应页面，
+         所以控件的 model-value 不跟随点击变化（否则会出现"选中了记录却还在看计划"的假状态） -->
+    <view class="pl-sections">
+      <FaSegmented :model-value="'PLAN'" :options="SECTION_OPTIONS" @update:model-value="gotoSection" />
+      <text class="fa-hint">记录=你自己填并已确认的场次，统计=服务端按口径算出的对比；两者都不等于这里的计划安排。</text>
+    </view>
+
     <!-- 过滤 + 排序 -->
     <view class="pl-filters">
       <view class="pl-chips">
@@ -101,6 +108,7 @@ import { onShow, onPullDownRefresh } from '@dcloudio/uni-app'
 import StateBlock from '@/components/StateBlock.vue'
 import FaIcon from '@/components/FaIcon.vue'
 import FaMoreMenu from '@/components/FaMoreMenu.vue'
+import FaSegmented from '@/components/FaSegmented.vue'
 import type { MoreItem } from '@/types/ui'
 import { fetchPlans } from '@/api/training'
 import { pageItems, pageMeta, isSessionExpiredError } from '@/utils/request'
@@ -305,6 +313,18 @@ function gotoExercises(): void {
 const moreOpen = ref(false)
 const MORE_ITEMS: MoreItem[] = [{ key: 'exercises', label: '动作字典', icon: 'dict' }]
 
+/** 训练模块二级结构：计划（本页）/ 记录（历史）/ 统计（当天与本周）。 */
+const SECTION_OPTIONS = [
+  { value: 'PLAN', label: '计划', icon: 'calendar' as const },
+  { value: 'RECORD', label: '记录', icon: 'dumbbell' as const },
+  { value: 'STATS', label: '统计', icon: 'chart' as const }
+]
+
+function gotoSection(value: string): void {
+  if (value === 'RECORD') void uni.navigateTo({ url: '/pages/workout/history' })
+  else if (value === 'STATS') void uni.navigateTo({ url: '/pages/workout/stats' })
+}
+
 function onMoreSelect(key: string): void {
   if (key === 'exercises') gotoExercises()
 }
@@ -320,6 +340,13 @@ onPullDownRefresh(() => {
 </script>
 
 <style lang="scss" scoped>
+.pl-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  margin-bottom: $fa-space-section;
+}
+
 .pl-filters {
   background-color: $fa-surface;
   border: 1px solid $fa-line;

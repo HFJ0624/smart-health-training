@@ -1,6 +1,6 @@
 # FitAgent 小程序视觉与组件规范（淡黄色主题）
 
-日期：2026-10-14。落地范围：`miniapp/src` 全部 14 个页面与 11 个组件、`pages.json` 导航与 TabBar。
+日期：2026-10-14。落地范围：`miniapp/src` 全部 14 个页面与 18 个组件、`pages.json` 导航与 TabBar。
 自动检查：`cd miniapp && npm run check:theme`（源码级，见 §5 的边界说明）。
 
 ## 1. Token 权威位置

@@ -20,7 +20,7 @@ export SPRING_PROFILES_ACTIVE=dev
 cd backend && mvn -B -pl app -am spring-boot:run
 ```
 
-如果没有那 13 张表而是手工建表，执行 `docs/sql/agent-v1-coach-and-foundation-mysql-8.4.sql` 并设 `FITAGENT_FLYWAY_ENABLED=false`。⚠️ **没有模型与价格种子（V23）时，一切调用都会被 `MODEL_NOT_CONFIGURED` 拒绝**——这是设计而非故障：请先按 `docs/agent-v1-protocol.md` 的核查结果把 `model_provider` / `model_catalog` / `model_price`（`rate_tier='PEAK'`、`enabled=1`）填好。
+如果没有那 13 张表而是手工建表，执行 `docs/sql/agent-v1-coach-and-foundation-mysql-8.4.sql` 并设 `FITAGENT_FLYWAY_ENABLED=false`。⚠️ **没有模型与价格种子（原预留 V23，现为 V26）时，一切调用都会被 `MODEL_NOT_CONFIGURED` 拒绝**——这是设计而非故障：请先按 `docs/agent-v1-protocol.md` 的核查结果把 `model_provider` / `model_catalog` / `model_price`（`rate_tier='PEAK'`、`enabled=1`）填好。
 
 ```bash
 # 小程序（微信开发者工具导入 dist/dev/mp-weixin，关闭域名校验）

@@ -284,10 +284,13 @@ export function stepSummaryText(step: RunStep): string {
  * `get_weekly_training_summary` **不存在**（训练执行记录业务缺失），
  * 因此快捷问题也绝不提供「今天完成度如何」这类无工具可答的入口。
  */
+/** 名字与后端 CoachToolNames 逐字一致；新增工具时这里必须同步，否则操作摘要会露出英文原名。 */
 export const COACH_TOOL_LABELS: Record<string, string> = {
   get_profile: '读取档案与目标',
   get_training_plan: '查询当天计划',
-  get_weight_trend: '读取体重记录'
+  get_weight_trend: '读取体重记录',
+  get_training_progress: '查询当天训练完成',
+  get_weekly_training_summary: '查询本周训练统计'
 }
 
 export function toolLabel(name: string | null | undefined): string {

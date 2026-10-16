@@ -1,10 +1,10 @@
 # FitAgent（智能健康训练智能体小程序）
 
-当前状态：**P1 基础功能 + Agent 第一版的代码与装配全部落地**，并完成一轮 **UI 重排**（图标短标签入口、真实体重折线、留白与四主导航）；能在本机执行的验证都已执行通过，依赖你的 MySQL 8.4 / Redis / 微信凭据 / DeepSeek Key 的项目在 `docs/agent-v1-acceptance.md` 与 `docs/ui-render-acceptance.md` 里逐条标为未验证。
+当前状态：**P1 基础功能 + Agent 第一版 + 一轮 UI 重排 + 阶段 2（训练执行记录、基础统计、两个 Agent 查询工具）的代码与装配全部落地**；能在本机执行的验证都已执行通过，依赖你的 MySQL 8.4 / Redis / 微信凭据 / DeepSeek Key 的项目在 `docs/stage2-acceptance.md` §4、`docs/agent-v1-acceptance.md` 与 `docs/ui-render-acceptance.md` 里逐条标为未验证。
 
-本机已执行并通过：`mvn test` **357 用例 0 失败 0 错误** · `vue-tsc --noEmit` **0 错误** · `npm run build:mp-weixin` **构建完成** · `npm run check:theme` **9 组断言通过**（色值/对比度/零硬编码/无 WXSS 不认的通配选择器/图标名/tabBar 图标）。
+本机已执行并通过：`mvn test` **422 用例 0 失败 0 错误**（2026-10-16 16:31，`BUILD SUCCESS`）· `vue-tsc --noEmit` **0 错误** · `npm run build:mp-weixin` **构建完成（17 个页面）** · `npm run check:theme` **9 组断言通过**（色值/对比度/零硬编码/无 WXSS 不认的通配选择器/图标名/tabBar 图标）。
 
-## 你要建的表：8 张（P1）+ 13 张（Agent 第一版）
+## 你要建的表：8 张（P1）+ 13 张（Agent 第一版）+ 3 张（阶段 2）
 
 | 顺序 | 表 | 用途 |
 |---|---|---|
@@ -19,15 +19,19 @@
 
 Agent 第一版增量 13 张（V10–V22）：`model_provider`、`model_catalog`、`model_price`、`model_credential`、`provider_balance_snapshot`、`budget_policy`、`budget_daily_usage`、`budget_reservation`、`chat_conversation`、`agent_run`、`model_call`、`agent_step`、`chat_message`。
 
+阶段 2 增量 3 张（V23–V25）：`workout_session`（实际训练场次，含 `active_user_id` STORED 生成列 + `UNIQUE` 实现的「同一用户至多一条进行中草稿」闸门）、`workout_session_entry`（动作条目）、`workout_session_set`（逐组）。**没有 metrics 表**：当天对比与周统计都是查询时的确定性计算，不预建报表。
+
 SQL 全文：
 
 - **一次建齐 21 张表：`docs/sql/fitagent-full-schema-mysql-8.4.sql`**（V1..V22 逐字拼接，含建库语句与 25 条动作字典种子）
 - 分批版本：`docs/sql/p1-init-mysql-8.4.sql`（V1..V9，8 张表）、`docs/sql/agent-v1-coach-and-foundation-mysql-8.4.sql`（V10..V22，13 张表）
+- **阶段 2 三张表：`docs/sql/stage2-workout-mysql-8.4.sql`**（V23..V25 逐字拼接 + 前置检查 + 9 条真库探针 P1–P9）。这份脚本**我没有在任何数据库上执行过**，是交付给你在 MySQL 8.4 上跑的；它同样不含 DROP/DELETE/TRUNCATE。
 - 手工执行方式：`mysql --default-character-set=utf8mb4 -h <你的 8.4 主机> -u <账号> -p < docs/sql/fitagent-full-schema-mysql-8.4.sql`
 - 目标库名是 **`smart_health_training`**（你的实际库），三份脚本与应用默认 JDBC URL、`infra/.env.example`、`docker-compose` 已同步改成它。
   脚本不是可重复执行的：`CREATE TABLE` 没有 `IF NOT EXISTS`（与 Flyway 迁移一致），之前跑到一半失败的残留表会报 1050；先按脚本头部的 `information_schema` 查询看缺哪几张，只补那几段，**不要 DROP**。
 - 两份都**不含任何 DROP/DELETE/TRUNCATE**，都要求 MySQL 8.4。
-- **模型与价格种子（V23）故意不出**：`deepseek-v4-pro` 的适用性与当期计费在官方两条公告里互相矛盾，需要你核对后再单独出迁移（`docs/agent-v1-protocol.md` §1）。没有种子行时，`ProviderCatalogService` 会以 `MODEL_NOT_CONFIGURED` 拒绝发起调用，而不是猜一个模型名。
+- **模型与价格种子（原预留 V23，现改为 V26）故意不出**：`deepseek-v4-pro` 的适用性与当期计费在官方两条公告里互相矛盾，需要你核对后再单独出迁移（`docs/agent-v1-protocol.md` §1）。没有种子行时，`ProviderCatalogService` 会以 `MODEL_NOT_CONFIGURED` 拒绝发起调用，而不是猜一个模型名。
+  ⚠ V23–V25 已被阶段 2 的 `workout_session` / `workout_session_entry` / `workout_session_set` 占用，**这份种子迁移的下一个是 V26**；`docs/agent-v1-acceptance.md`、`docs/agent-v1-demo.md` 里残留的「V23」都按 V26 理解。
 
 SQL 全文：**`docs/sql/p1-init-mysql-8.4.sql`**（由 `backend/app/src/main/resources/db/migration/V1..V9` 逐字拼接生成，含建库语句与字典种子，**不含任何 DROP/DELETE**）。
 
@@ -100,7 +104,11 @@ npm run dev:mp-weixin
 | [`docs/module-guide.md`](docs/module-guide.md) | 目录职责、一个请求路过的地方、AI 教练完整链路、一页对应一条链 |
 | [`docs/ui-style-guide.md`](docs/ui-style-guide.md) | 主题 token、尺度规范、图标系统与图表口径、状态表达规则、检查覆盖与不覆盖什么 |
 | [`docs/ui-render-plan.md`](docs/ui-render-plan.md) | UI 重排对照表：原有功能分别去了哪个新入口/新区域、新增组件、明确不做的图形与理由 |
-| [`docs/ui-render-acceptance.md`](docs/ui-render-acceptance.md) | 逐页改动、自动化检查结果、我真正"看见"过的渲染证据、仍未验证清单（微信可视验收靠这一节） |
+| [`docs/current-status-handoff.md`](docs/current-status-handoff.md) | **当前状态与阶段验收交接报告**：功能状态矩阵、核心流程复现到哪一步、Agent 与费用的真实证据等级、问题清单与下一阶段唯一建议（§0 是阶段 2 落地后的版本更正） |
+| [`docs/stage2-design.md`](docs/stage2-design.md) | 阶段 2 设计：三表与四条不变式、接口、状态机、计划版本引用口径、统计口径、两个 Agent 工具、前端结构 |
+| [`docs/stage2-acceptance.md`](docs/stage2-acceptance.md) | 阶段 2 验收：执行环境、实际跑过的命令与数字、循环调用证据、交付清单、**8 条未验证项及各自的复现方式** |
+| [`docs/ui-render-acceptance.md`](docs/ui-render-acceptance.md) |
+逐页改动、自动化检查结果、我真正"看见"过的渲染证据、仍未验证清单（微信可视验收靠这一节） |
 
 ## 阶段 A 规划文档
 
@@ -137,8 +145,10 @@ npm run dev:mp-weixin
 
 缺失或由你自行安装：**Docker 未安装**；本机在用的是 **MySQL 5.7.19**，它无法满足 `utf8mb4_0900_ai_ci` 与 CHECK 约束要求，**不能用于验证本阶段迁移**（详见 `docs/p1-database.md` §2）。因此迁移类与并发类验收项在阶段 B 交付时会如实标注为"未验证"，并附可复现命令。
 
-## 本轮明确没有做的
+## 仍然没有做的
 
-训练执行记录与完成度统计（`workout_session/entry/set` 与 metrics 都不存在），所以"今天完成多少""本周练了几次"这类问题**本轮无工具可答**，Agent 会回答"无法根据已确认记录判断"。设计包 A3 那段 50% 完成度的演示与提示词 B14 第 8 项因此不在本轮验收范围内 —— 宁可少注册工具，也不为示范效果伪造业务。
+**AI 生成/修改训练计划**：计划只能由用户手工新建或 JSON 模板导入，且导入只出 DRAFT、需用户确认才生效。这是下一阶段的唯一主任务建议（见 `docs/current-status-handoff.md` §0）。
 
 其余同样未做：饮食图片识别、能耗公式与医学阈值、RAG/向量库、文件上传、Python 服务、教学视频、MCP、多 Agent、自动修改或激活训练计划。
+
+> 阶段 2 之前这里写的是「训练执行记录与完成度统计不存在、`workout_session/entry/set` 与 metrics 都不存在、Agent 只有三个工具」。**那段已过期**：三表、`modules/metrics` 与 `get_training_progress`/`get_weekly_training_summary` 两个工具都在 2026-10-16 落地，「今天练得怎么样」「这周练了几次」现在有据可答。范围与验收分别见 `docs/stage2-design.md`、`docs/stage2-acceptance.md`。

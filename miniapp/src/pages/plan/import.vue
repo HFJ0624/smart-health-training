@@ -112,7 +112,10 @@
 /**
  * 计划导入页（docs/p1-plan-import.md §1、§10）。两条入口——
  *  (a) 从微信会话选文件：`wx.chooseMessageFile({count:1,type:'file',extension:['json']})` → `getFileSystemManager().readFile`
- *      —— `readFile` 无 Promise 形式，用回调包；整段仅在 `// #ifdef MP-WEIXIN` 内执行，其它平台给出明确降级说明。
+ *      —— `readFile` 无 Promise 形式，用回调包；整段只在微信端的条件编译分支里执行。
+ *      ⚠ 这条注释里**不要复述条件编译指令的原文**：uni-app 的预处理器是按纯文本扫的，
+ *      注释里出现一个孤立指令就会让整个文件被判成「配对不完整」，构建时静默按错误分支裁剪代码。
+ *      其它平台走明确降级说明那条路径。
  *  (b) 粘贴 JSON 文本。
  * 两条都喂给 `POST /api/plans/import/preview`（无副作用），用 `ImportPreviewList` 渲染规范化预览 + 逐字段错误；
  * `errors` 非空即禁用「确认保存」。确认调 `POST /api/plans/import`，带 `Idempotency-Key`（uuidV4），
@@ -383,7 +386,7 @@ async function confirm(): Promise<void> {
   }
 }
 
-// 微信会话选文件：所有 wx.* 调用都在 `// #ifdef MP-WEIXIN` 内；readFile 回调包 Promise（§1）
+// 微信会话选文件：所有 wx.* 调用都包在本函数的微信端条件编译分支内；readFile 回调包 Promise（§1）
 function onChooseFile(): void {
   // :class 的禁用只改透明度，<view> 仍然可点：必须在这里挡住，否则会叠出多个选文件回调
   if (fileBusy.value || previewing.value || confirming.value) return
